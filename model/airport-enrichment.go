@@ -83,16 +83,18 @@ func UpdateAirportTable() {
 	on (target.identifier = source.ident)
 		when matched then
 			update set target.name = upper(source.name), target.latitude = source.latitude_deg, target.longitude = source.longitude_deg,
-						target.city = upper(source.municipality), target.country = upper(source.iso_country),
+						target.city = upper(source.municipality), target.province  = substr(upper(source.iso_region), length(source.iso_country)+2),
+						target.country = upper(source.iso_country),
 							target.modified = sysdate, target.version = target.version + 1
 			where nvl(target.name,' ') != upper(source.name) or target.latitude != source.latitude_deg or target.longitude != source.longitude_deg or
-					nvl(target.city,' ') != upper(source.municipality) or nvl(target.country,' ') != upper(source.iso_country)
+					nvl(target.city,' ') != upper(source.municipality) or nvl(target.province,' ') != substr(upper(source.iso_region), length(source.iso_country)+2) or
+					nvl(target.country,' ') != upper(source.iso_country)
 		when not matched then
 			insert (target.id, target.identifier, target.name, target.latitude, target.longitude,
-						target.city, target.country, 
+						target.city, target.province, target.country,
 							target.created,	target.modified , target.version)
 			values (airport_seq.nextval, source.ident, upper(source.name), source.latitude_deg , source.longitude_deg,
-							upper(source.municipality), upper(source.iso_country),
+							upper(source.municipality), substr(upper(source.iso_region), length(source.iso_country)+2), upper(source.iso_country), 
 							   sysdate, sysdate, 0)	
 	`
 	result, error := Db.Exec(sqlStatement)

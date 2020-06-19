@@ -78,7 +78,7 @@ func PersistRows(columnNameToIndex map[string]int, rows [][]string) {
 // UpdateAirportTable updates airport from airport_enrichment table
 func UpdateAirportTable() {
 	sqlStatement := `
-	merge into airport_2 target
+	merge into airport target
 	using airport_enrichment source
 	on (target.identifier = source.ident)
 		when matched then

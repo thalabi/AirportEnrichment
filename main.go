@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"log"
 	"os"
 
@@ -17,24 +16,18 @@ func main() {
 	prop := properties.MustLoadFile("application.properties", properties.UTF8)
 	model.InitDB(prop)
 
+	log.Println("Downloading file ...")
 	filehelper.DownloadFile(prop.GetString("airports-url", ""), prop.GetString("airports-filename", ""))
+	log.Println("Reading file ...")
 	rows := filehelper.ReadFile(prop.GetString("airports-filename", ""))
-	//rows := readAirportFile()
-	log.Println("# of columns:", len(rows[0]))
-	log.Println("# of rows:", len(rows))
+	log.Printf("Read %v lines", len(rows))
 	columnNameToIndex := buildColumnNameMap(rows)
-	fmt.Println(len(rows[0]))
-	for i, colName := range rows[0] {
-		columnNameToIndex[colName] = i
-		log.Println(colName)
-	}
-	for i, row := range rows[1:] {
-		if i < 5 {
-			log.Println("ident: ", row[columnNameToIndex["ident"]], "name: ", row[columnNameToIndex["name"]], "latitude_deg: ", row[columnNameToIndex["latitude_deg"]], "longitude_deg: ", row[columnNameToIndex["longitude_deg"]], "iso_country: ", row[columnNameToIndex["iso_country"]], "iso_region: ", row[columnNameToIndex["iso_region"]])
-		}
-	}
+	log.Println("Clearing airport_enrichment table ...")
 	model.ClearRows()
+	log.Println("Inserting into airport_enrichment table ...")
 	model.PersistRows(columnNameToIndex, rows[1:])
+	log.Println("Enriching airport table ...")
+	model.UpdateAirportTable()
 }
 
 func readAirportFile() [][]string {
@@ -54,7 +47,6 @@ func buildColumnNameMap(rows [][]string) map[string]int {
 	var columnNameToIndex = make(map[string]int)
 	for i, colName := range rows[0] {
 		columnNameToIndex[colName] = i
-		log.Println(colName)
 	}
 	return columnNameToIndex
 }

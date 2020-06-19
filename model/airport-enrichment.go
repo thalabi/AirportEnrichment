@@ -32,7 +32,11 @@ type AirportEnrichment struct {
 // ClearRows clears table rows
 func ClearRows() {
 	sqlStatement := "truncate table airport_enrichment reuse storage"
-	Db.Exec(sqlStatement)
+	_, error := Db.Exec(sqlStatement)
+	if error != nil {
+		log.Fatal("Failed to execute sql ", sqlStatement)
+	}
+
 }
 
 // PersistRows to table airport_enrichment
@@ -60,6 +64,34 @@ func PersistRows(columnNameToIndex map[string]int, rows [][]string) {
 	}
 	tx.Commit()
 	log.Println("Inserted row # ", insertCount)
+}
+
+// UpdateAirportTable updates airport from airport_enrichment table
+func UpdateAirportTable() {
+	sqlStatement := `
+	merge into airport_2 target
+	using airport_enrichment source
+	on (target.identifier = source.ident)
+		when matched then
+			update set target.name = upper(source.name), target.latitude = source.latitude_deg, target.longitude = source.longitude_deg,
+						target.city = upper(source.municipality), target.country = upper(source.iso_country),
+							target.modified = sysdate, target.version = target.version + 1
+			where nvl(target.name,' ') != upper(source.name) or target.latitude != source.latitude_deg or target.longitude != source.longitude_deg or
+					nvl(target.city,' ') != upper(source.municipality) or nvl(target.country,' ') != upper(source.iso_country)
+		when not matched then
+			insert (target.id, target.identifier, target.name, target.latitude, target.longitude,
+						target.city, target.country, 
+							target.created,	target.modified , target.version)
+			values (airport_seq.nextval, source.ident, upper(source.name), source.latitude_deg , source.longitude_deg,
+							upper(source.municipality), upper(source.iso_country),
+							   sysdate, sysdate, 0)	
+	`
+	result, error := Db.Exec(sqlStatement)
+	if error != nil {
+		log.Fatal("Failed to execute sql ", sqlStatement)
+	}
+	count, _ := result.RowsAffected()
+	log.Println("Rows affected: ", count)
 }
 
 func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnrichment {

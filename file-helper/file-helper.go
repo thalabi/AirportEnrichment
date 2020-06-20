@@ -12,35 +12,45 @@ import (
 // write as it downloads and not load the whole file into memory.
 func DownloadFile(url string, filepath string) error {
 
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
+	const retryTimes = 10
+	var response *http.Response
+	// Get the data, retrying 10 times
+	retryCount := 0
+	for {
+		var error error
+		response, error = http.Get(url)
+		if error == nil {
+			break
+		}
+		if retryCount++; retryCount > retryTimes {
+			return error
+		}
+		log.Printf("Retrying http get %v", url)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
 	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
+	out, error := os.Create(filepath)
+	if error != nil {
+		return error
 	}
 	defer out.Close()
 
 	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
+	_, error = io.Copy(out, response.Body)
+	return error
 }
 
-// ReadFile eads file in [][]string
-func ReadFile(filepath string) [][]string {
-	f, err := os.Open(filepath)
-	if err != nil {
-		log.Fatal(err)
+// ReadCsvFile eads file in [][]string
+func ReadCsvFile(filepath string) [][]string {
+	file, error := os.Open(filepath)
+	if error != nil {
+		log.Fatal(error)
 	}
-	rows, err := csv.NewReader(f).ReadAll()
-	f.Close()
-	if err != nil {
-		log.Fatal(err)
+	rows, error := csv.NewReader(file).ReadAll()
+	file.Close()
+	if error != nil {
+		log.Fatal(error)
 	}
 	return rows
 }

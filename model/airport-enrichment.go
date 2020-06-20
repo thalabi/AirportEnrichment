@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -48,8 +49,9 @@ func PersistRows(columnNameToIndex map[string]int, rows [][]string) {
 
 	insertCount := 0
 	for i, row := range rows {
-		airportEnrichment := buildRow(columnNameToIndex, i, row)
-		if airportEnrichment == nil {
+		airportEnrichment, error := buildRow(columnNameToIndex, i, row)
+		if error != nil {
+			log.Println(error)
 			continue
 		}
 
@@ -106,12 +108,12 @@ func UpdateAirportTable() {
 	log.Println("Rows affected: ", count)
 }
 
-func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnrichment {
+func buildRow(columnNameToIndex map[string]int, i int, row []string) (*AirportEnrichment, error) {
 	var airportEnrichment AirportEnrichment
 	id, error := strconv.Atoi(row[columnNameToIndex["id"]])
 	if error != nil {
-		log.Printf("Row index: %v, Unable to parse id: %v ", i, row[columnNameToIndex["id"]])
-		return nil
+		error = fmt.Errorf("Row index: %v, Unable to parse id: %v ", i, row[columnNameToIndex["id"]])
+		return nil, error
 	}
 	airportEnrichment.ID = null.IntFrom(int64(id))
 	airportEnrichment.Ident = null.StringFrom(row[columnNameToIndex["ident"]])
@@ -120,7 +122,7 @@ func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnr
 	latitudeDeg, error := strconv.ParseFloat(row[columnNameToIndex["latitude_deg"]], 64)
 	if error != nil {
 		if row[columnNameToIndex["latitude_deg"]] != "" {
-			log.Printf("Row index: %v, Unable to parse latitude_deg: %v, setting to null ", i, row[columnNameToIndex["latitude_deg"]])
+			log.Printf("Row index: %v, Unable to parse latitude_deg: %v, setting to null in database", i, row[columnNameToIndex["latitude_deg"]])
 		}
 		airportEnrichment.LatitudeDeg = null.FloatFromPtr(nil)
 	} else {
@@ -129,7 +131,7 @@ func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnr
 	longitudeDeg, error := strconv.ParseFloat(row[columnNameToIndex["longitude_deg"]], 64)
 	if error != nil {
 		if row[columnNameToIndex["longitude_deg"]] != "" {
-			log.Printf("Row index: %v, Unable to parse longitude_deg: %v ", i, row[columnNameToIndex["longitude_deg"]])
+			log.Printf("Row index: %v, Unable to parse longitude_deg: %v, setting to null in database ", i, row[columnNameToIndex["longitude_deg"]])
 		}
 		airportEnrichment.LongitudeDeg = null.FloatFromPtr(nil)
 	} else {
@@ -138,7 +140,7 @@ func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnr
 	elevationFt, error := strconv.Atoi(row[columnNameToIndex["elevation_ft"]])
 	if error != nil {
 		if row[columnNameToIndex["elevation_ft"]] != "" {
-			log.Printf("Row index: %v, Unable to parse int: %v, setting to null", i, row[columnNameToIndex["elevation_ft"]])
+			log.Printf("Row index: %v, Unable to parse int: %v, setting to null in database", i, row[columnNameToIndex["elevation_ft"]])
 		}
 		airportEnrichment.ElevationFt = null.IntFromPtr(nil)
 	} else {
@@ -156,5 +158,5 @@ func buildRow(columnNameToIndex map[string]int, i int, row []string) *AirportEnr
 	airportEnrichment.WikipediaLink = null.StringFrom(row[columnNameToIndex["wikipedia_link"]])
 	airportEnrichment.Keywords = null.StringFrom(row[columnNameToIndex["keywords"]])
 
-	return &airportEnrichment
+	return &airportEnrichment, nil
 }

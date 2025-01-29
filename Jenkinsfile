@@ -2,6 +2,7 @@ pipeline {
     agent any
         tools { 
             go 'Go Version 1.23.5'
+            maven 'Maven-3.8.4' 
         }
     stages {
         stage('Compile') {

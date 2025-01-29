@@ -5,7 +5,9 @@ import (
 
 	filehelper "github.com/thalabi/AirportEnrichment/file-helper"
 
-	_ "github.com/godror/godror"
+	//_ "github.com/godror/godror"
+	//_ "github.com/jackc/pgx"
+	_ "github.com/lib/pq"
 	"github.com/magiconair/properties"
 	"github.com/thalabi/AirportEnrichment/model"
 )
@@ -32,7 +34,7 @@ func main() {
 	model.PersistRows(columnNameToIndex, rows[1:])
 
 	log.Println("Enriching airport table ...")
-	model.UpdateAirportTable()
+	model.EnrichAirportTable()
 }
 
 func buildColumnNameMap(rows [][]string) map[string]int {

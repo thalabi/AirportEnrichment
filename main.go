@@ -17,7 +17,11 @@ func main() {
 	model.InitDB(prop)
 
 	log.Println("Downloading file ...")
-	filehelper.DownloadFile(airportsURL, airportsFilename)
+	error := filehelper.DownloadFile(airportsURL, airportsFilename)
+	if error != nil {
+		log.Printf("Failed to download file from %v", airportsURL)
+		log.Fatal(error)
+	}
 
 	log.Println("Reading file ...")
 	rows := filehelper.ReadCsvFile(airportsFilename)

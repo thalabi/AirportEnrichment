@@ -18,7 +18,6 @@ func main() {
 
 	log.Println("Downloading file ...")
 	error := filehelper.DownloadFile(airportsURL, airportsFilename)
-	log.Printf("error after DownloadFile: %v", error)
 	if error != nil {
 		log.Printf("Failed to download file from %v", airportsURL)
 		log.Fatal(error)

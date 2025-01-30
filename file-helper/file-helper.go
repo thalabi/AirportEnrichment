@@ -23,7 +23,6 @@ func DownloadFile(url string, filepath string) error {
 			break
 		}
 		if retryCount++; retryCount > retryTimes {
-			log.Printf("retryCount: %v, retryTimes: %v", retryCount, retryTimes)
 			return error
 		}
 		log.Printf("Retrying http get %v", url)

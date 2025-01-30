@@ -3,6 +3,7 @@ package model
 import (
 	"log"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/magiconair/properties"
 )
@@ -13,7 +14,11 @@ var Db *sqlx.DB
 // InitDB func
 func InitDB(prop *properties.Properties) {
 	var err error
-	Db, err = sqlx.Connect("postgres", "user="+prop.GetString("username", "")+" password="+prop.GetString("password", "")+" dbname=postgres sslmode=disable host="+prop.GetString("host", "")+" port="+prop.GetString("port", ""))
+	host := prop.GetString("host", "")
+	port := prop.GetString("port", "")
+	username := prop.GetString("username", "")
+	password := prop.GetString("password", "")
+	Db, err = sqlx.Connect("pgx", "postgres://"+username+":"+password+"@"+host+":"+port+"/"+"postgres")
 	if err != nil {
 		log.Panic(err)
 	}

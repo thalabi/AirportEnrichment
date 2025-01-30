@@ -5,7 +5,6 @@ import (
 
 	filehelper "github.com/thalabi/AirportEnrichment/file-helper"
 
-	_ "github.com/lib/pq"
 	"github.com/magiconair/properties"
 	"github.com/thalabi/AirportEnrichment/model"
 )

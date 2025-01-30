@@ -93,8 +93,8 @@ func EnrichAirportTable() {
                             city = upper(source.municipality), province  = substr(upper(source.iso_region), length(source.iso_country)+2),
                             country = upper(source.iso_country), modified = now(), version = target.version + 1
             when not matched then
-                insert (identifier, name, latitude, longitude, city, province, country, created, modified, version)
-                values (source.ident, upper(source.name), source.latitude_deg , source.longitude_deg, upper(source.municipality), substr(upper(source.iso_region),
+                insert (identifier, lk, name, latitude, longitude, city, province, country, created, modified, version)
+                values (source.ident, source.ident, upper(source.name), source.latitude_deg , source.longitude_deg, upper(source.municipality), substr(upper(source.iso_region),
                         length(source.iso_country)+2), upper(source.iso_country), now(), now(), 0)	
 	`
 

@@ -45,7 +45,6 @@ func ClearRows() {
 // PersistRows to table airport_enrichment
 func PersistRows(columnNameToIndex map[string]int, rows [][]string) {
 
-	//	sqlStatement := "insert into airport_enrichment(id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, continent, iso_country, iso_region, municipality, scheduled_service, gps_code, iata_code, local_code, home_link, wikipedia_link, keywords) values (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, :12, :13, :14, :15, :16, :17, :18)"
 	sqlStatement := "insert into airport_enrichment(id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, continent, iso_country, iso_region, municipality, scheduled_service, gps_code, iata_code, local_code, home_link, wikipedia_link, keywords) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)"
 	tx := Db.MustBegin()
 
@@ -81,58 +80,38 @@ func PersistRows(columnNameToIndex map[string]int, rows [][]string) {
 
 // EnrichAirportTable updates airport from airport_enrichment table
 func EnrichAirportTable() {
-	// sqlUpdateStatement := `
-	// merge into airport target
-	// using airport_enrichment source
-	// on (target.identifier = source.ident)
-	// 	when matched then
-	// 		update set target.name = upper(source.name), target.latitude = source.latitude_deg, target.longitude = source.longitude_deg,
-	// 					target.city = upper(source.municipality), target.province  = substr(upper(source.iso_region), length(source.iso_country)+2),
-	// 					target.country = upper(source.iso_country),
-	// 						target.modified = sysdate, target.version = target.version + 1
-	// 		where nvl(target.name,' ') != upper(source.name) or target.latitude != source.latitude_deg or target.longitude != source.longitude_deg or
-	// 				nvl(target.city,' ') != upper(source.municipality) or nvl(target.province,' ') != substr(upper(source.iso_region), length(source.iso_country)+2) or
-	// 				nvl(target.country,' ') != upper(source.iso_country)
-	// 	when not matched then
-	// 		insert (target.id, target.identifier, target.name, target.latitude, target.longitude,
-	// 					target.city, target.province, target.country,
-	// 						target.created,	target.modified , target.version)
-	// 		values (airport_seq.nextval, source.ident, upper(source.name), source.latitude_deg , source.longitude_deg,
-	// 						upper(source.municipality), substr(upper(source.iso_region), length(source.iso_country)+2), upper(source.iso_country),
-	// 						   sysdate, sysdate, 0)
-	// `
 	sqlUpdateStatement := `
-WITH source AS (
-    SELECT 
-        ident, 
-        UPPER(name) AS name, 
-        latitude_deg, 
-        longitude_deg, 
-        UPPER(municipality) AS city, 
-        SUBSTRING(UPPER(iso_region) FROM LENGTH(iso_country) + 2) AS province, 
-        UPPER(iso_country) AS country
-    FROM airport_enrichment
-)
-UPDATE airport AS target
-SET 
-    name = source.name,
-    latitude = source.latitude_deg,
-    longitude = source.longitude_deg,
-    city = source.city,
-    province = source.province,
-    country = source.country,
-    modified = NOW(),
-    version = target.version + 1
-FROM source
-WHERE target.identifier = source.ident
-AND (
-    COALESCE(target.name, ' ') <> source.name OR 
-    target.latitude <> source.latitude_deg OR 
-    target.longitude <> source.longitude_deg OR 
-    COALESCE(target.city, ' ') <> source.city OR 
-    COALESCE(target.province, ' ') <> source.province OR 
-    COALESCE(target.country, ' ') <> source.country
-)
+        WITH source AS (
+            SELECT 
+                ident, 
+                UPPER(name) AS name, 
+                latitude_deg, 
+                longitude_deg, 
+                UPPER(municipality) AS city, 
+                SUBSTRING(UPPER(iso_region) FROM LENGTH(iso_country) + 2) AS province, 
+                UPPER(iso_country) AS country
+            FROM airport_enrichment
+        )
+        UPDATE airport AS target
+        SET 
+            name = source.name,
+            latitude = source.latitude_deg,
+            longitude = source.longitude_deg,
+            city = source.city,
+            province = source.province,
+            country = source.country,
+            modified = NOW(),
+            version = target.version + 1
+        FROM source
+        WHERE target.identifier = source.ident
+        AND (
+            COALESCE(target.name, ' ') <> source.name OR 
+            target.latitude <> source.latitude_deg OR 
+            target.longitude <> source.longitude_deg OR 
+            COALESCE(target.city, ' ') <> source.city OR 
+            COALESCE(target.province, ' ') <> source.province OR 
+            COALESCE(target.country, ' ') <> source.country
+        )
 	`
 
 	updateResult, error := Db.Exec(sqlUpdateStatement)
@@ -141,38 +120,37 @@ AND (
 		log.Fatal("Failed to execute sql ", sqlUpdateStatement)
 	}
 	updateCount, _ := updateResult.RowsAffected()
-	//log.Println("Rows affected: ", count)
 	log.Println("Rows updated: ", updateCount)
 
 	sqlInsertStatement := `
-WITH source AS (
-    SELECT 
-        ident, 
-        UPPER(name) AS name, 
-        latitude_deg, 
-        longitude_deg, 
-        UPPER(municipality) AS city, 
-        SUBSTRING(UPPER(iso_region) FROM LENGTH(iso_country) + 2) AS province, 
-        UPPER(iso_country) AS country
-    FROM airport_enrichment
-)
-INSERT INTO airport (identifier, lk, name, latitude, longitude, city, province, country, created, modified, version)
-SELECT 
-    source.ident, 
-	source.ident, 
-    source.name, 
-    source.latitude_deg, 
-    source.longitude_deg, 
-    source.city, 
-    source.province, 
-    source.country, 
-    NOW(), 
-    NOW(), 
-    0
-FROM source
-WHERE NOT EXISTS (
-    SELECT 1 FROM airport target WHERE target.identifier = source.ident
-)
+        WITH source AS (
+            SELECT 
+                ident, 
+                UPPER(name) AS name, 
+                latitude_deg, 
+                longitude_deg, 
+                UPPER(municipality) AS city, 
+                SUBSTRING(UPPER(iso_region) FROM LENGTH(iso_country) + 2) AS province, 
+                UPPER(iso_country) AS country
+            FROM airport_enrichment
+        )
+        INSERT INTO airport (identifier, lk, name, latitude, longitude, city, province, country, created, modified, version)
+        SELECT 
+            source.ident, 
+            source.ident, 
+            source.name, 
+            source.latitude_deg, 
+            source.longitude_deg, 
+            source.city, 
+            source.province, 
+            source.country, 
+            NOW(), 
+            NOW(), 
+            0
+        FROM source
+        WHERE NOT EXISTS (
+            SELECT 1 FROM airport target WHERE target.identifier = source.ident
+        )
 	`
 
 	insertResult, error := Db.Exec(sqlInsertStatement)
@@ -181,16 +159,14 @@ WHERE NOT EXISTS (
 		log.Fatal("Failed to execute sql ", sqlInsertStatement)
 	}
 	insertCount, _ := insertResult.RowsAffected()
-	//log.Println("Rows affected: ", count)
 	log.Println("Rows inserted: ", insertCount)
-
 }
 
 func buildRow(columnNameToIndex map[string]int, i int, row []string) (*AirportEnrichment, error) {
 	var airportEnrichment AirportEnrichment
 	id, error := strconv.Atoi(row[columnNameToIndex["id"]])
 	if error != nil {
-		error = fmt.Errorf("Row index: %v, Unable to parse id: %v ", i, row[columnNameToIndex["id"]])
+		error = fmt.Errorf("row index: %v, unable to parse id: %v ", i, row[columnNameToIndex["id"]])
 		return nil, error
 	}
 	airportEnrichment.ID = null.IntFrom(int64(id))

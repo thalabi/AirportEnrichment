@@ -41,7 +41,7 @@ func DownloadFile(url string, filepath string) error {
 	return error
 }
 
-// ReadCsvFile eads file in [][]string
+// ReadCsvFile reads file in [][]string
 func ReadCsvFile(filepath string) [][]string {
 	file, error := os.Open(filepath)
 	if error != nil {
